@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, send_from_directory
 import os
 import uuid
-from model import try_on   # <-- import our AI function
+from model import try_on
 
 app = Flask(__name__)
 
@@ -22,7 +22,6 @@ def tryon():
         cloth_image = request.files['cloth_image']
         product_id  = request.form.get('product_id', 'unknown')
 
-        # Save uploaded files with unique names
         unique_id       = str(uuid.uuid4())[:8]
         user_path       = os.path.join(UPLOAD_FOLDER, f"user_{unique_id}.jpg")
         cloth_path      = os.path.join(UPLOAD_FOLDER, f"cloth_{unique_id}.jpg")
@@ -32,12 +31,13 @@ def tryon():
         user_image.save(user_path)
         cloth_image.save(cloth_path)
 
-        # ── Run AI model ──
         success, message = try_on(user_path, cloth_path, output_path)
 
         if success:
+            base_url = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "127.0.0.1:5000")
+            protocol = "https" if "railway" in base_url else "http"
             return jsonify({
-                "output": f"http://127.0.0.1:5000/outputs/{output_filename}",
+                "output": f"{protocol}://{base_url}/outputs/{output_filename}",
                 "message": message
             })
         else:
@@ -47,11 +47,16 @@ def tryon():
         return jsonify({"error": str(e)})
 
 
-# Serve output images to CI4/browser
 @app.route('/outputs/<filename>')
 def get_output(filename):
     return send_from_directory(OUTPUT_FOLDER, filename)
 
+
+@app.route('/')
+def index():
+    return jsonify({"status": "Virtual Try-On API is running"})
+
+
 if __name__ == "__main__":
-port = int(os.environ.get("PORT", 5000))
-app.run(host="0.0.0.0", port=port, debug=False)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
