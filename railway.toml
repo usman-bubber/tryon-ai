@@ -1,0 +1,7 @@
+[build]
+
+[deploy]
+startCommand = "gunicorn --bind 0.0.0.0:${PORT:-8000} --timeout 180 app:app"
+
+[variables]
+RAILPACK_PYTHON_VERSION = "3.12"
