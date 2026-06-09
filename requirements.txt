@@ -1,0 +1,8 @@
+flask
+gunicorn
+opencv-python-headless
+gradio_client
+requests
+replicate
+numpy
+pillow
