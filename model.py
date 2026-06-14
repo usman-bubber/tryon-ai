@@ -1,5 +1,6 @@
 """
-Virtual Try-On - Clean model.py (NO watermarks, NO wrong results)
+Virtual Try-On - Clean model.py (NO watermarks)
+Removes Nymbo space (adds watermark), prioritizes clean spaces
 """
 
 import requests
@@ -9,11 +10,15 @@ import time
 import shutil
 from pathlib import Path
 
-FASHN_API_KEY     = "YOUR_FASHN_API_KEY"
-REPLICATE_API_KEY = "YOUR_REPLICATE_API_KEY"
+# ──────────────────────────────────────────────────────────────────────────────
+# OPTIONAL PAID API KEYS (free HF spaces work without these)
+# ──────────────────────────────────────────────────────────────────────────────
+FASHN_API_KEY     = "YOUR_FASHN_API_KEY"      # https://fashn.ai  → free 20/day
+REPLICATE_API_KEY = "YOUR_REPLICATE_API_KEY"   # https://replicate.com → $0.003/run
 
 
 def _save_result(result, output_path):
+    """Helper: extract file path from gradio result and copy to output"""
     if not result:
         return False
     src = result
@@ -28,11 +33,38 @@ def _save_result(result, output_path):
     return False
 
 
-# ── OPTION 1: Kolors (most reliable, correct results) ────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────
+# OPTION 1: CatVTON — NO watermark, best quality
+# ──────────────────────────────────────────────────────────────────────────────
+def try_on_catvton(user_image_path, cloth_image_path, output_path):
+    try:
+        from gradio_client import Client, handle_file
+        print("[1/4] Trying CatVTON...")
+        client = Client("zhengchong/CatVTON")
+        result = client.predict(
+            image=handle_file(user_image_path),
+            condition_image=handle_file(cloth_image_path),
+            mask=None,
+            num_inference_steps=50,
+            guidance_scale=2.5,
+            seed=42,
+            show_type="result only",
+            api_name="/submit"
+        )
+        if _save_result(result, output_path):
+            return True, "CatVTON success"
+    except Exception as e:
+        print(f"  CatVTON failed: {e}")
+    return try_on_kolors(user_image_path, cloth_image_path, output_path)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# OPTION 2: Kolors Virtual Try-On — NO watermark
+# ──────────────────────────────────────────────────────────────────────────────
 def try_on_kolors(user_image_path, cloth_image_path, output_path):
     try:
         from gradio_client import Client, handle_file
-        print("[1/3] Trying Kolors Virtual Try-On...")
+        print("[2/4] Trying Kolors Virtual Try-On...")
         client = Client("Kwai-Kolors/Kolors-Virtual-Try-On")
         result = client.predict(
             human_img=handle_file(user_image_path),
@@ -47,20 +79,22 @@ def try_on_kolors(user_image_path, cloth_image_path, output_path):
     return try_on_idmvton(user_image_path, cloth_image_path, output_path)
 
 
-# ── OPTION 2: IDM-VTON ───────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────
+# OPTION 3: IDM-VTON (yisol) — NO watermark
+# ──────────────────────────────────────────────────────────────────────────────
 def try_on_idmvton(user_image_path, cloth_image_path, output_path):
     try:
         from gradio_client import Client, handle_file
-        print("[2/3] Trying IDM-VTON...")
+        print("[3/4] Trying IDM-VTON...")
         client = Client("yisol/IDM-VTON")
         result = client.predict(
             dict={
                 "background": handle_file(user_image_path),
-                "layers":     [],
-                "composite":  None
+                "layers": [],
+                "composite": None
             },
             garm_img=handle_file(cloth_image_path),
-            garment_des="upper body clothing",
+            garment_des="a clothing item",
             is_checked=True,
             is_checked_crop=False,
             denoise_steps=30,
@@ -74,11 +108,13 @@ def try_on_idmvton(user_image_path, cloth_image_path, output_path):
     return try_on_leffa(user_image_path, cloth_image_path, output_path)
 
 
-# ── OPTION 3: Leffa ──────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────
+# OPTION 4: Leffa (franciszzj) — NO watermark
+# ──────────────────────────────────────────────────────────────────────────────
 def try_on_leffa(user_image_path, cloth_image_path, output_path):
     try:
         from gradio_client import Client, handle_file
-        print("[3/3] Trying Leffa...")
+        print("[4/4] Trying Leffa...")
         client = Client("franciszzj/Leffa")
         result = client.predict(
             src_image_path=handle_file(user_image_path),
@@ -96,22 +132,26 @@ def try_on_leffa(user_image_path, cloth_image_path, output_path):
     except Exception as e:
         print(f"  Leffa failed: {e}")
 
+    # Fall to paid APIs if keys provided
     if FASHN_API_KEY != "YOUR_FASHN_API_KEY":
         return try_on_fashn(user_image_path, cloth_image_path, output_path)
     if REPLICATE_API_KEY != "YOUR_REPLICATE_API_KEY":
         return try_on_replicate(user_image_path, cloth_image_path, output_path)
 
-    return False, "All HuggingFace spaces busy. Try again in a few minutes."
+    return False, "All HuggingFace spaces are currently busy. Try again in a few minutes or add a FASHN/Replicate API key."
 
 
-# ── OPTION 4: FASHN.ai ───────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────
+# OPTION 5: FASHN.ai (FREE tier 20/day) — NO watermark
+# Get key FREE at: https://fashn.ai → Sign up → Dashboard → API Keys
+# ──────────────────────────────────────────────────────────────────────────────
 def try_on_fashn(user_image_path, cloth_image_path, output_path):
     try:
         def to_b64(path):
             with open(path, "rb") as f:
                 return base64.b64encode(f.read()).decode()
 
-        print("[4] Trying FASHN.ai...")
+        print("[5] Trying FASHN.ai...")
         resp = requests.post(
             "https://api.fashn.ai/v1/run",
             headers={"Authorization": f"Bearer {FASHN_API_KEY}"},
@@ -140,19 +180,24 @@ def try_on_fashn(user_image_path, cloth_image_path, output_path):
                     f.write(img_resp.content)
                 return True, "FASHN.ai success"
             elif data["status"] == "failed":
-                return False, "FASHN failed"
+                return False, "FASHN processing failed"
+
         return False, "FASHN timeout"
     except Exception as e:
         print(f"  FASHN failed: {e}")
         return try_on_replicate(user_image_path, cloth_image_path, output_path)
 
 
-# ── OPTION 5: Replicate ──────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────
+# OPTION 6: Replicate IDM-VTON (~$0.003/run) — NO watermark
+# Get key at: https://replicate.com → Account → API Tokens
+# ──────────────────────────────────────────────────────────────────────────────
 def try_on_replicate(user_image_path, cloth_image_path, output_path):
     try:
         import replicate
         os.environ["REPLICATE_API_TOKEN"] = REPLICATE_API_KEY
-        print("[5] Trying Replicate...")
+
+        print("[6] Trying Replicate IDM-VTON...")
 
         def to_b64_url(path):
             ext = Path(path).suffix.lstrip(".")
@@ -165,7 +210,7 @@ def try_on_replicate(user_image_path, cloth_image_path, output_path):
             input={
                 "human_img":       to_b64_url(user_image_path),
                 "garm_img":        to_b64_url(cloth_image_path),
-                "garment_des":     "upper body clothing",
+                "garment_des":     "clothing",
                 "is_checked":      True,
                 "is_checked_crop": False,
                 "denoise_steps":   30,
@@ -176,16 +221,20 @@ def try_on_replicate(user_image_path, cloth_image_path, output_path):
             resp = requests.get(str(output), timeout=30)
             with open(output_path, "wb") as f:
                 f.write(resp.content)
-            return True, "Replicate success"
-        return False, "Replicate no output"
+            return True, "Replicate IDM-VTON success"
+        return False, "Replicate returned no output"
     except Exception as e:
         print(f"  Replicate failed: {e}")
         return False, str(e)
 
 
-# ── MAIN ─────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────
+# MAIN
+# ──────────────────────────────────────────────────────────────────────────────
 def try_on(user_image_path, cloth_image_path, output_path):
     print("\n" + "="*50)
-    print("Virtual Try-On Starting...")
+    print("Virtual Try-On — Starting (No Watermark Version)")
     print("="*50)
-    return try_on_idmvton(user_image_path, cloth_image_path, output_path)
+    # NOTE: Nymbo/Virtual-Try-On is intentionally EXCLUDED
+    # because it adds an 'Ipciguru' watermark to all results.
+    return try_on_catvton(user_image_path, cloth_image_path, output_path)
