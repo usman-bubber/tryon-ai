@@ -34,12 +34,18 @@ def try_on_idmvton(user_image_path, cloth_image_path, output_path):
         from gradio_client import Client, handle_file
         print("Trying IDM-VTON...")
         client = Client("yisol/IDM-VTON")
+
+        # Send exactly like the website sends it
         result = client.predict(
-            dict={"background": handle_file(user_image_path), "layers": [], "composite": None},
+            dict={
+                "background": handle_file(user_image_path),
+                "layers":     [],
+                "composite":  handle_file(user_image_path)  # ← this was None before
+            },
             garm_img=handle_file(cloth_image_path),
             garment_des="upper body clothing",
             is_checked=True,
-            is_checked_crop=False,
+            is_checked_crop=True,   # ← changed to True
             denoise_steps=30,
             seed=42,
             api_name="/tryon"
