@@ -34,10 +34,15 @@ def tryon():
         success, message = try_on(user_path, cloth_path, output_path)
 
         if success:
-            base_url = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "127.0.0.1:5000")
-            protocol = "https" if "railway" in base_url else "http"
+            # Get Railway domain from environment variable
+            base_url = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "")
+            if base_url:
+                output_url = f"https://{base_url}/outputs/{output_filename}"
+            else:
+                output_url = f"https://tryon-ai-production.up.railway.app/outputs/{output_filename}"
+            
             return jsonify({
-                "output": f"{protocol}://{base_url}/outputs/{output_filename}",
+                "output": output_url,
                 "message": message
             })
         else:
