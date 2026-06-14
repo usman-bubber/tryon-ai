@@ -1,5 +1,6 @@
 """
-Virtual Try-On - Clean model.py (NO watermarks, NO wrong results)
+Virtual Try-On - Maximum Fallback Version
+Tries 8 different spaces to ensure one always works
 """
 
 import requests
@@ -28,37 +29,13 @@ def _save_result(result, output_path):
     return False
 
 
-# ── OPTION 1: Kolors (most reliable, correct results) ────────────────────────
-def try_on_kolors(user_image_path, cloth_image_path, output_path):
-    try:
-        from gradio_client import Client, handle_file
-        print("[1/3] Trying Kolors Virtual Try-On...")
-        client = Client("Kwai-Kolors/Kolors-Virtual-Try-On")
-        result = client.predict(
-            human_img=handle_file(user_image_path),
-            garm_img=handle_file(cloth_image_path),
-            garment_des="upper body clothing",
-            api_name="/run"
-        )
-        if _save_result(result, output_path):
-            return True, "Kolors success"
-    except Exception as e:
-        print(f"  Kolors failed: {e}")
-    return try_on_idmvton(user_image_path, cloth_image_path, output_path)
-
-
-# ── OPTION 2: IDM-VTON ───────────────────────────────────────────────────────
 def try_on_idmvton(user_image_path, cloth_image_path, output_path):
     try:
         from gradio_client import Client, handle_file
-        print("[2/3] Trying IDM-VTON...")
+        print("Trying IDM-VTON...")
         client = Client("yisol/IDM-VTON")
         result = client.predict(
-            dict={
-                "background": handle_file(user_image_path),
-                "layers":     [],
-                "composite":  None
-            },
+            dict={"background": handle_file(user_image_path), "layers": [], "composite": None},
             garm_img=handle_file(cloth_image_path),
             garment_des="upper body clothing",
             is_checked=True,
@@ -71,14 +48,13 @@ def try_on_idmvton(user_image_path, cloth_image_path, output_path):
             return True, "IDM-VTON success"
     except Exception as e:
         print(f"  IDM-VTON failed: {e}")
-    return try_on_leffa(user_image_path, cloth_image_path, output_path)
+    return False, "failed"
 
 
-# ── OPTION 3: Leffa ──────────────────────────────────────────────────────────
 def try_on_leffa(user_image_path, cloth_image_path, output_path):
     try:
         from gradio_client import Client, handle_file
-        print("[3/3] Trying Leffa...")
+        print("Trying Leffa...")
         client = Client("franciszzj/Leffa")
         result = client.predict(
             src_image_path=handle_file(user_image_path),
@@ -95,23 +71,111 @@ def try_on_leffa(user_image_path, cloth_image_path, output_path):
             return True, "Leffa success"
     except Exception as e:
         print(f"  Leffa failed: {e}")
-
-    if FASHN_API_KEY != "YOUR_FASHN_API_KEY":
-        return try_on_fashn(user_image_path, cloth_image_path, output_path)
-    if REPLICATE_API_KEY != "YOUR_REPLICATE_API_KEY":
-        return try_on_replicate(user_image_path, cloth_image_path, output_path)
-
-    return False, "All HuggingFace spaces busy. Try again in a few minutes."
+    return False, "failed"
 
 
-# ── OPTION 4: FASHN.ai ───────────────────────────────────────────────────────
+def try_on_kolors(user_image_path, cloth_image_path, output_path):
+    try:
+        from gradio_client import Client, handle_file
+        print("Trying Kolors...")
+        client = Client("Kwai-Kolors/Kolors-Virtual-Try-On")
+        result = client.predict(
+            human_img=handle_file(user_image_path),
+            garm_img=handle_file(cloth_image_path),
+            garment_des="upper body clothing",
+            api_name="/run"
+        )
+        if _save_result(result, output_path):
+            return True, "Kolors success"
+    except Exception as e:
+        print(f"  Kolors failed: {e}")
+    return False, "failed"
+
+
+def try_on_ootd(user_image_path, cloth_image_path, output_path):
+    try:
+        from gradio_client import Client, handle_file
+        print("Trying OOTDiffusion...")
+        client = Client("levihsu/OOTDiffusion")
+        result = client.predict(
+            vton_img=handle_file(user_image_path),
+            garm_img=handle_file(cloth_image_path),
+            n_samples=1,
+            n_steps=20,
+            image_scale=2.0,
+            seed=-1,
+            api_name="/process_hd"
+        )
+        if _save_result(result, output_path):
+            return True, "OOTDiffusion success"
+    except Exception as e:
+        print(f"  OOTDiffusion failed: {e}")
+    return False, "failed"
+
+
+def try_on_catvton(user_image_path, cloth_image_path, output_path):
+    try:
+        from gradio_client import Client, handle_file
+        print("Trying CatVTON...")
+        client = Client("zhengchong/CatVTON")
+        result = client.predict(
+            image=handle_file(user_image_path),
+            condition_image=handle_file(cloth_image_path),
+            mask=None,
+            num_inference_steps=50,
+            guidance_scale=2.5,
+            seed=42,
+            show_type="result only",
+            api_name="/submit"
+        )
+        if _save_result(result, output_path):
+            return True, "CatVTON success"
+    except Exception as e:
+        print(f"  CatVTON failed: {e}")
+    return False, "failed"
+
+
+def try_on_viton(user_image_path, cloth_image_path, output_path):
+    try:
+        from gradio_client import Client, handle_file
+        print("Trying HR-VITON...")
+        client = Client("postech-cvlab/HR-VITON")
+        result = client.predict(
+            handle_file(user_image_path),
+            handle_file(cloth_image_path),
+            api_name="/predict"
+        )
+        if _save_result(result, output_path):
+            return True, "HR-VITON success"
+    except Exception as e:
+        print(f"  HR-VITON failed: {e}")
+    return False, "failed"
+
+
+def try_on_outfit_anyone(user_image_path, cloth_image_path, output_path):
+    try:
+        from gradio_client import Client, handle_file
+        print("Trying OutfitAnyone...")
+        client = Client("HumanAIGC/OutfitAnyone")
+        result = client.predict(
+            handle_file(user_image_path),
+            handle_file(cloth_image_path),
+            api_name="/predict"
+        )
+        if _save_result(result, output_path):
+            return True, "OutfitAnyone success"
+    except Exception as e:
+        print(f"  OutfitAnyone failed: {e}")
+    return False, "failed"
+
+
 def try_on_fashn(user_image_path, cloth_image_path, output_path):
     try:
         def to_b64(path):
             with open(path, "rb") as f:
                 return base64.b64encode(f.read()).decode()
 
-        print("[4] Trying FASHN.ai...")
+        print("Trying FASHN.ai...")
         resp = requests.post(
             "https://api.fashn.ai/v1/run",
             headers={"Authorization": f"Bearer {FASHN_API_KEY}"},
@@ -125,7 +189,6 @@ def try_on_fashn(user_image_path, cloth_image_path, output_path):
         )
         resp.raise_for_status()
         prediction_id = resp.json()["id"]
-
         for _ in range(60):
             time.sleep(3)
             poll = requests.get(
@@ -138,21 +201,20 @@ def try_on_fashn(user_image_path, cloth_image_path, output_path):
                 img_resp = requests.get(data["output"][0], timeout=30)
                 with open(output_path, "wb") as f:
                     f.write(img_resp.content)
-                return True, "FASHN.ai success"
+                return True, "FASHN success"
             elif data["status"] == "failed":
                 return False, "FASHN failed"
         return False, "FASHN timeout"
     except Exception as e:
         print(f"  FASHN failed: {e}")
-        return try_on_replicate(user_image_path, cloth_image_path, output_path)
+    return False, "failed"
 
 
-# ── OPTION 5: Replicate ──────────────────────────────────────────────────────
 def try_on_replicate(user_image_path, cloth_image_path, output_path):
     try:
         import replicate
         os.environ["REPLICATE_API_TOKEN"] = REPLICATE_API_KEY
-        print("[5] Trying Replicate...")
+        print("Trying Replicate...")
 
         def to_b64_url(path):
             ext = Path(path).suffix.lstrip(".")
@@ -177,16 +239,41 @@ def try_on_replicate(user_image_path, cloth_image_path, output_path):
             with open(output_path, "wb") as f:
                 f.write(resp.content)
             return True, "Replicate success"
-        return False, "Replicate no output"
     except Exception as e:
         print(f"  Replicate failed: {e}")
-        return False, str(e)
+    return False, "failed"
 
 
-# ── MAIN ─────────────────────────────────────────────────────────────────────
+# ── MAIN — tries ALL options until one works ──────────────────────────────────
 def try_on(user_image_path, cloth_image_path, output_path):
     print("\n" + "="*50)
-    print("Virtual Try-On Starting...")
+    print("Virtual Try-On Starting — Trying all options...")
     print("="*50)
-    # Try spaces in order until one works correctly
-    return try_on_leffa(user_image_path, cloth_image_path, output_path)
+
+    methods = [
+        try_on_idmvton,
+        try_on_leffa,
+        try_on_kolors,
+        try_on_ootd,
+        try_on_catvton,
+        try_on_viton,
+        try_on_outfit_anyone,
+    ]
+
+    # Add paid APIs if keys are set
+    if FASHN_API_KEY != "YOUR_FASHN_API_KEY":
+        methods.append(try_on_fashn)
+    if REPLICATE_API_KEY != "YOUR_REPLICATE_API_KEY":
+        methods.append(try_on_replicate)
+
+    for method in methods:
+        try:
+            success, msg = method(user_image_path, cloth_image_path, output_path)
+            if success:
+                print(f"✅ Success: {msg}")
+                return True, msg
+        except Exception as e:
+            print(f"  Method {method.__name__} crashed: {e}")
+            continue
+
+    return False, "All AI spaces are currently offline. Please try again in 10 minutes."
