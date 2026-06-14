@@ -184,17 +184,8 @@ def try_on_replicate(user_image_path, cloth_image_path, output_path):
 
 
 # ── MAIN ─────────────────────────────────────────────────────────────────────
-# def try_on(user_image_path, cloth_image_path, output_path):
-#     print("\n" + "="*50)
-#     print("Virtual Try-On Starting...")
-#     print(f"User:  {user_image_path}")
-#     print(f"Cloth: {cloth_image_path}")
-#     print("="*50)
-#     return try_on_kolors(user_image_path, cloth_image_path, output_path)
-
-    def try_on(user_image_path, cloth_image_path, output_path):
+def try_on(user_image_path, cloth_image_path, output_path):
     print("\n" + "="*50)
     print("Virtual Try-On Starting...")
     print("="*50)
-    # Try IDM-VTON first — most accurate free option
     return try_on_idmvton(user_image_path, cloth_image_path, output_path)
