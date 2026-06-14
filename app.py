@@ -11,7 +11,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 @app.route('/tryon', methods=['POST'])
-def tryon():
+def tryon_route():
     try:
         if 'user_image' not in request.files:
             return jsonify({"error": "user_image missing"})
@@ -34,15 +34,14 @@ def tryon():
         success, message = try_on(user_path, cloth_path, output_path)
 
         if success:
-            # Get Railway domain from environment variable
-            base_url = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "")
-            if base_url:
-                output_url = f"https://{base_url}/outputs/{output_filename}"
-            else:
-                output_url = f"https://tryon-ai-production.up.railway.app/outputs/{output_filename}"
-            
+            # Always use Railway public domain
+            railway_domain = os.environ.get(
+                "RAILWAY_PUBLIC_DOMAIN",
+                "tryon-ai-production.up.railway.app"
+            )
+            output_url = f"https://{railway_domain}/outputs/{output_filename}"
             return jsonify({
-                "output": output_url,
+                "output":  output_url,
                 "message": message
             })
         else:
