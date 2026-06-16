@@ -13,6 +13,7 @@ from pathlib import Path
 FASHN_API_KEY     = "YOUR_FASHN_API_KEY"
 REPLICATE_API_KEY = "YOUR_REPLICATE_API_KEY"
 
+
 def _save_result(result, output_path):
     if not result:
         return False
@@ -26,6 +27,7 @@ def _save_result(result, output_path):
         shutil.copy(src, output_path)
         return True
     return False
+
 
 def try_on_idmvton(user_image_path, cloth_image_path, output_path):
     try:
@@ -54,6 +56,7 @@ def try_on_idmvton(user_image_path, cloth_image_path, output_path):
         print(f"  IDM-VTON failed: {e}")
     return False, "failed"
 
+
 def try_on_leffa(user_image_path, cloth_image_path, output_path):
     try:
         from gradio_client import Client, handle_file
@@ -76,6 +79,7 @@ def try_on_leffa(user_image_path, cloth_image_path, output_path):
         print(f"  Leffa failed: {e}")
     return False, "failed"
 
+
 def try_on_kolors(user_image_path, cloth_image_path, output_path):
     try:
         from gradio_client import Client, handle_file
@@ -92,6 +96,7 @@ def try_on_kolors(user_image_path, cloth_image_path, output_path):
     except Exception as e:
         print(f"  Kolors failed: {e}")
     return False, "failed"
+
 
 def try_on_ootd(user_image_path, cloth_image_path, output_path):
     try:
@@ -112,6 +117,7 @@ def try_on_ootd(user_image_path, cloth_image_path, output_path):
     except Exception as e:
         print(f"  OOTDiffusion failed: {e}")
     return False, "failed"
+
 
 def try_on_catvton(user_image_path, cloth_image_path, output_path):
     try:
@@ -134,6 +140,7 @@ def try_on_catvton(user_image_path, cloth_image_path, output_path):
         print(f"  CatVTON failed: {e}")
     return False, "failed"
 
+
 def try_on_viton(user_image_path, cloth_image_path, output_path):
     try:
         from gradio_client import Client, handle_file
@@ -150,6 +157,7 @@ def try_on_viton(user_image_path, cloth_image_path, output_path):
         print(f"  HR-VITON failed: {e}")
     return False, "failed"
 
+
 def try_on_outfit_anyone(user_image_path, cloth_image_path, output_path):
     try:
         from gradio_client import Client, handle_file
@@ -165,6 +173,7 @@ def try_on_outfit_anyone(user_image_path, cloth_image_path, output_path):
     except Exception as e:
         print(f"  OutfitAnyone failed: {e}")
     return False, "failed"
+
 
 def try_on_fashn(user_image_path, cloth_image_path, output_path):
     try:
@@ -206,6 +215,7 @@ def try_on_fashn(user_image_path, cloth_image_path, output_path):
         print(f"  FASHN failed: {e}")
     return False, "failed"
 
+
 def try_on_replicate(user_image_path, cloth_image_path, output_path):
     try:
         import replicate
@@ -238,6 +248,7 @@ def try_on_replicate(user_image_path, cloth_image_path, output_path):
     except Exception as e:
         print(f"  Replicate failed: {e}")
     return False, "failed"
+
 
 # ── MAIN — tries ALL options until one works ──────────────────────────────────
 def try_on(user_image_path, cloth_image_path, output_path):
