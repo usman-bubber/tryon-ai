@@ -34,26 +34,23 @@ def tryon():
 
         success, message = try_on(user_path, cloth_path, output_path)
 
-        # Cleanup uploads
         try:
             os.remove(user_path)
             os.remove(cloth_path)
         except:
             pass
 
-    if success:
-        # Return as base64 — Railway deletes files on restart
-        with open(output_path, "rb") as f:
-            import base64
-            img_b64 = base64.b64encode(f.read()).decode('utf-8')
-        try:
-            os.remove(output_path)
-        except:
-            pass
-        return jsonify({
-            "output_base64": img_b64,
-            "message": message
-        })
+        if success:
+            with open(output_path, "rb") as f:
+                img_b64 = base64.b64encode(f.read()).decode('utf-8')
+            try:
+                os.remove(output_path)
+            except:
+                pass
+            return jsonify({
+                "output_base64": img_b64,
+                "message": message
+            })
         else:
             return jsonify({"error": message})
 
@@ -69,4 +66,3 @@ def index():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
- 
